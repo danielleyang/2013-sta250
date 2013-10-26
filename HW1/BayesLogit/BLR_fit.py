@@ -101,6 +101,6 @@ X = data[:, 2:4]
 pct = bayes_logreg(m, y, X, beta_0, Sigma_0_inv)
 
 # Save the results.
-result_file = 'results/blr_res_1{0}.csv'.format(job)
+result_file = 'results/blr_res_{0}.csv'.format(job)
 np.savetxt(result_file, pct, delimiter = ',', fmt = '%.8f')
 
