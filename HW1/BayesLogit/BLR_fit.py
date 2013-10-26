@@ -83,8 +83,12 @@ def log_posterior(beta, m, y, X, beta_0, Sigma_0_inv):
 beta_0 = np.zeros(2)
 Sigma_0_inv = np.eye(2)
 
-job = '1{0:03}'.format(int(sys.argv[1]))
-print 'Running job {0}.'.format(job)
+if len(sys.argv) >= 3 and sys.argv[1] == '-i':
+    job = '1{0:03}'.format(int(sys.argv[2]))
+    print 'Running job {0}.'.format(job)
+else:
+    print 'Invalid syntax. Use BLR_fit.py -i <job>'
+    sys.exit()
 
 # Read values from the data file.
 data_file = 'data/blr_data_{0}.csv'.format(job)
