@@ -177,8 +177,8 @@ def fit_breast_cancer():
     scale = np.array([0.001, 0.8, 0.7, 0.8, 0.8, 0.002, 0.02, 0.8, 0.7, 0.02,
                       0.5])
     # Run the logistic regression.
-    samp = bayes_logreg(m, y, X, beta_0, Sigma_0_inv, scale, 
-                        niter = 20000, gibbs = True)
+    samp = bayes_logreg(m, y, X, beta_0, Sigma_0_inv, scale, niter = 30000,
+                        gibbs = True)
 
     # Save the results.
     result_file = 'results/breast_cancer_res.txt'
