@@ -210,15 +210,15 @@ def post_process_breast_cancer():
     print '  ' + ' '.join('{0: >6.4f}'.format(s) for s in corr)
 
     ac_file = 'results/breast_cancer_ac.txt'
-    np.savetxt(result_file, samp, fmt = '%.8f')
+    np.savetxt(ac_file, corr, fmt = '%.8f')
 
-    # Calculate postierior mean.
+    # Calculate posterior mean.
     est = np.mean(samp, axis = 0)
     print '\nPosterior means:'
     print '  ' + ' '.join('{0: >6.4f}'.format(s) for s in est)
 
     mean_file = 'results/breast_cancer_mean.txt'
-    np.savetxt(result_file, est, fmt = '%.8f')
+    np.savetxt(mean_file, est, fmt = '%.8f')
 
     # Do a posterior predictive check of the mean.
     sim = predictive_sim(est, X, y)
