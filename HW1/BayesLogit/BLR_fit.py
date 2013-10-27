@@ -128,8 +128,8 @@ def fit_sim(job):
     
     # Read values from the data file.
     data_file = 'data/blr_data_{0}.csv'.format(job)
-    data = np.loadtxt(data_file, delimiter = ',', skiprows = 1,
-                      dtype = 'i4, i4, 2f8')
+    data = np.genfromtxt(data_file, delimiter = ',', skip_header = 1, 
+                         dtype = 'i4,i4,2f8')
     y = data['f0']
     m = data['f1']
     X = data['f2']
