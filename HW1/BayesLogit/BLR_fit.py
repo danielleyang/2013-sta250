@@ -218,24 +218,16 @@ def post_process_breast_cancer():
     pct_file = 'results/breast_cancer_pct.txt'
     np.savetxt(pct_file, pct[[4, 24, 49, 74, 94]], fmt = '%.4f')
 
-    # Calculate posterior mean.
-    est = np.mean(samp, axis = 0)
-    print '\nPosterior means:'
-    print '  ' + ' '.join('{0: >6.4f}'.format(s) for s in est)
-
-    mean_file = 'results/breast_cancer_mean.txt'
-    np.savetxt(mean_file, est, fmt = '%.8f')
-
     # Do a posterior predictive check of the mean.
-    sim = predictive_sim(est, X, y)
+    sim = predictive_sim(samp, X, y)
 
     y_mean = np.mean(y)
     sim_means = np.mean(sim, axis = 1)
     plt.hist(sim_means, 20)
     plt.xlabel('Mean Response')
     plt.ylabel('Count')
-    plt.vlines(y_mean, 0, 1000, color = 'r', linewidth = 2.0)
-    plt.ylim(ymax = n)
+    plt.vlines(y_mean, 0, 8000, color = 'r', linewidth = 2.0)
+    plt.ylim(ymax = 8000)
     plt.savefig('ppc_hist.png', dpi = 300)
 
 # This function computes percentiles iteratively because Numpy doesn't support
@@ -256,12 +248,15 @@ def autocorr(x, lags = 1, normalize = True):
         ac = ac / ac[0]
     return ac[1:]
 
-def predictive_sim(estimate, X, y, size = 1000):
-    prob = np.exp(X.dot(estimate)) / (1 + np.exp(X.dot(estimate)))
-    n = y.size
+def predictive_sim(samp, X, y):
+    (size, p) = samp.shape
 
+    n = y.size
     simulated = np.zeros(size * n).reshape((size, n))
-    for i in range(0, n):
+    for i in range(0, size):
+        est = samp[i, :]
+        prob = np.exp(X.dot(est)) / (1 + np.exp(X.dot(est)))
+
         simulated[i, :] = np.random.binomial(1, prob)
 
     return simulated
