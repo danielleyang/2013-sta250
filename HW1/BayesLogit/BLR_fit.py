@@ -138,13 +138,8 @@ def fit_sim(job):
     scale = np.repeat(0.005, p)
     samp = bayes_logreg(m, y, X, beta_0, Sigma_0_inv, scale)
     
-    # Compute percentiles iteratively because Numpy doesn't support vectorized
-    # percentiles yet.
-    pct = np.zeros(99 * p).reshape(99, p)
-
-    for j in range(0, p):
-        for i in range(0, 99):
-            pct[i, j] = np.percentile(samp[:, j], i + 1)
+    # Get the percentiles.
+    pct = percentiles(samp)
 
     print
     print '25th percentile: {0}'.format(pct[24, :])
@@ -212,6 +207,17 @@ def post_process_breast_cancer():
     ac_file = 'results/breast_cancer_ac.txt'
     np.savetxt(ac_file, corr, fmt = '%.8f')
 
+    # Get the percentiles.
+    pct = percentiles(samp)
+
+    print
+    print '25th percentile: {0}'.format(pct[24, :])
+    print '50th percentile: {0}'.format(pct[49, :])
+    print '75th percentile: {0}'.format(pct[74, :])
+
+    pct_file = 'results/breast_cancer_pct.txt'
+    np.savetxt(pct_file, pct[[4, 24, 49, 74, 94]], fmt = '%.4f')
+
     # Calculate posterior mean.
     est = np.mean(samp, axis = 0)
     print '\nPosterior means:'
@@ -226,9 +232,23 @@ def post_process_breast_cancer():
     y_mean = np.mean(y)
     sim_means = np.mean(sim, axis = 1)
     plt.hist(sim_means, 20)
+    plt.xlabel('Mean Response')
+    plt.ylabel('Count')
     plt.vlines(y_mean, 0, 1000, color = 'r', linewidth = 2.0)
     plt.ylim(ymax = n)
     plt.savefig('ppc_hist.png', dpi = 300)
+
+# This function computes percentiles iteratively because Numpy doesn't support
+# vectorized percentiles yet.
+def percentiles(x):
+    (_, p) = x.shape
+    pct = np.zeros(99 * p).reshape(99, p)
+
+    for j in range(0, p):
+        for i in range(0, 99):
+            pct[i, j] = np.percentile(x[:, j], i + 1)
+
+    return pct
 
 def autocorr(x, lags = 1, normalize = True):
     ac = np.correlate(x, x, mode = 'full')[len(x) - 1:len(x) + lags]
