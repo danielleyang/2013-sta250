@@ -66,19 +66,19 @@ def main():
 
 def readRows(file, rows, ncol):
     # Read the specified rows from a file.
-    max_row = np.max(rows)
+    rows = np.sort(rows)
     data = np.zeros((len(rows), ncol))
     i = 0
     with open(file, 'r') as reader:
         lines = csv.reader(reader)
         for (row, line) in enumerate(lines):
-            if row in rows:
+            if row == rows[i]:
                 # Store rows in a matrix.
                 data[i, :] = np.float64(line[0:ncol])
                 i += 1
-            elif row > max_row:
-                # Stop reading through the file once we've got all rows.
-                break
+                if i > len(rows):
+                    # Stop reading through the file once we've got all rows.
+                    break
     return data
 
 def countLines(file):
@@ -109,8 +109,8 @@ def parseArgs():
     if args.i:
         # Use the full data set.
         index = int(args.i)
-        s_index = (index // R) + 1
-        r_index = index % R
+        s_index = ((index - 1) // R) + 1
+        r_index = index - (s_index - 1) * R
         # The little bootstrap subset must be the same for all jobs with the
         # same s_index, while the little bootstrap sample created from the
         # subset must be different for all jobs.
