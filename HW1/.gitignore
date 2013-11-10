@@ -1,0 +1,5 @@
+*.pyc
+tex/*.pdf
+data/
+dump/
+results/
