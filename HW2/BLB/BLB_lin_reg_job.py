@@ -23,7 +23,7 @@ MINI_IN = 'data/blb_lin_reg_mini.txt'
 MINI_OUT = 'output/coef_mini.txt'
 # The full data file.
 FULL_N = 10 ** 6
-FULL_P = 100
+FULL_P = 1000
 FULL_IN = '/home/pdbaines/data/blb_lin_reg_data.txt'
 
 # ----- Functions
