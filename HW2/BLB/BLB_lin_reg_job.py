@@ -38,7 +38,7 @@ def main():
     if seeds:
         # Ensure every job with the same s_index draws the same subset.
         np.random.seed(seeds[0])
-    rows = np.random.choice(n, b)
+    rows = np.random.choice(n, b, replace = False)
 
     # Get the subset rows.
     data = readRows(in_file, rows, p + 1)
@@ -59,6 +59,7 @@ def main():
 
     # Store the result.
     with open(out_file, 'w') as writer:
+        writer.write('beta\n')
         for elt in beta:
             writer.write(str(elt) + '\n')
 
@@ -76,7 +77,8 @@ def readRows(file, rows, ncol):
                 # Store rows in a matrix.
                 data[i, :] = np.float64(line[0:ncol])
                 i += 1
-                if i > len(rows):
+                if i == len(rows):
+                    assert row == rows[-1]
                     # Stop reading through the file once we've got all rows.
                     break
     return data
