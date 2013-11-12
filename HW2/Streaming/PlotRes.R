@@ -1,4 +1,4 @@
-
+#!/usr/bin/env Rscript
 # Make 2D Histogram:
 
 #res <- read.table("mini_result.txt",sep=",",header=F)
