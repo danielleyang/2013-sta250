@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# PlotData.R
+# plot_mean_var.R
 # Author: Nick Ulle
 # Description:
 #   This script produces the mean-variance plot for HW2, part 3, provided
@@ -13,7 +13,7 @@ vars <- read.csv('output/variances.csv', header = FALSE)
 data <- merge(means, vars, by = 'V1')
 names(data) <- c('Groups', 'Mean', 'Variance')
 
-png('../tex/res/mean_var.png', 2400, 2400)
+png('../tex/res/03_mean_var_plot.png', 8, 8, units = 'in', res = 300)
 xyplot(Variance ~ Mean, data, main = 'Mean-Variance Plot')
 dev.off()
 

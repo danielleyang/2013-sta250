@@ -1,0 +1,91 @@
+\documentclass[article]{memoir}
+
+% ----- Packages -----
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+% Must come after amsmath.
+%\usepackage{amsthm}
+
+\usepackage{mathtools}
+\usepackage{subdepth}
+\usepackage{dsfont}
+\usepackage{flafter}
+\usepackage{graphicx}
+\usepackage{listings}
+
+% ----- Page -----
+\setlrmarginsandblock{1in}{1in}{*}
+\setulmarginsandblock{1in}{1in}{*}
+\checkandfixthelayout
+
+\makepagestyle{name}
+    \makeevenhead{name}{\textsl\thetitle}{}
+    {\textsl{\thepage\ of \thelastpage\ --- Nick Ulle}}
+    \makeoddhead{name}{\textsl\thetitle}{}
+    {\textsl{\thepage\ of \thelastpage\ --- Nick Ulle}}
+\makepagestyle{no-name}
+    \makeevenhead{no-name}{\textsl\thetitle}{}
+    {\textsl{\thepage\ of \thelastpage}}
+    \makeoddhead{no-name}{\textsl\thetitle}{}
+    {\textsl{\thepage\ of \thelastpage}}
+
+% ----- Floats -----
+\changecaptionwidth
+\captionwidth{0.6\textwidth}
+\setfloatadjustment{table}{\centering}
+\setfloatadjustment{figure}{\centering}
+
+\newsubfloat{table}
+\newsubfloat{figure}
+
+%\setFloatBlockFor{chapter}
+
+% ----- Listings -----
+\lstset{basicstyle = \ttfamily, numberstyle = \tiny, stepnumber = 2}
+
+% ----- Commands -----
+\let\Pr\relax%
+
+% Use the nice phi.
+\let\temp\phi
+\let\phi\varphi
+\let\varphi\temp
+
+\DeclareMathOperator{\Pr}{\mathds{P}}
+\DeclareMathOperator{\E}{\mathds{E}}
+\DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\Cov}{Cov}
+\DeclareMathOperator{\Cor}{Cor}
+\DeclareMathOperator{\eul}{e}
+\DeclareMathOperator{\1}{\mathbf{1}}
+\DeclareMathOperator{\sign}{sign}
+\DeclareMathOperator{\diag}{diag}
+\DeclareMathOperator{\tr}{tr}
+\DeclareMathOperator*{\argmin}{argmin}
+\DeclareMathOperator*{\argmax}{argmax}
+%\DeclareMathOperator{\N}{N}
+%\DeclareMathOperator{\F}{F}
+%\DeclareMathOperator{\Wishart}{W}
+
+\newcommand{\abs}[1]{\lvert#1\rvert}
+\newcommand{\norm}[1]{\lVert#1\rVert}
+\newcommand{\ceil}[1]{\lceil#1\rceil}
+\newcommand{\floor}[1]{\lfloor#1\rfloor}
+\newcommand{\df}{\,\mathrm{d}}
+\newcommand{\pd}[2][]{\frac{\partial#1}{\partial#2}}
+\newcommand{\dv}[2][]{\frac{\mathrm{d}#1}{\mathrm{d}#2}}
+\newcommand{\inD}{\mathop{\rightarrow}\limits^{\mathrm{D}}}
+\newcommand{\inP}{\mathop{\rightarrow}\limits^{\mathrm{P}}}
+\newcommand{\qed}{\hfill \ensuremath{\square}}
+\newcommand{\T}{^\mathsf{T}}
+\newcommand{\C}{^\mathsf{C}}
+\newcommand{\io}{\text{ i.o.}}
+\newcommand{\ev}{\text{ ev.}}
+\newcommand{\dist}[1]{\operatorname{#1}}
+\newcommand{\iid}{\overset{\mathrm{iid}}{\sim}}
+\newcommand{\on}[1]{\operatorname{\mathds{1}}\!\left\{#1\right\}}
+\newcommand{\ind}{\protect\mathpalette{\protect\independenT}{\perp}}
+
+\def\independenT#1#2{\mathrel{\rlap{$#1#2$}\mkern4mu{#1#2}}}
+
