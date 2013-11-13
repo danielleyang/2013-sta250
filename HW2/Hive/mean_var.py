@@ -1,6 +1,9 @@
 #!/usr/bin/env python2
 # mean_var.py
 # Author: Nick Ulle
+# Description:
+#   This script computes the mean and variance for the mini_groups.txt file,
+#   to check against the results computed using Hive.
 
 import numpy as np
 

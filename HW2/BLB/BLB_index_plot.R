@@ -1,6 +1,10 @@
 #!/usr/bin/env Rscript
 # BLB_index_plot.R
 # Author: Nick Ulle
+# Description:
+#   This script produces the index plot for HW2, part 1, provided the bag of
+#   little bootstraps has already been run (including the post-processing
+#   script).
 
 library(lattice)
 

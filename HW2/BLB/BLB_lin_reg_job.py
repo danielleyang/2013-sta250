@@ -1,6 +1,11 @@
 #!/bin/env python2
 # BLB_lin_reg_job.py
 # Author: Nick Ulle
+# Description:
+#   This script takes a little bootstrap sample from the specified CSV data
+#   set and fits a linear regression. The last column of the data set is
+#   assumed to be the response. When no arguments are specified, the mini data
+#   set is used, provided it is in the data/ subdirectory.
 
 import argparse as ap
 import csv
@@ -95,10 +100,10 @@ def countLines(file):
 def parseArgs():
     # Set up command line arguments.
     parser = ap.ArgumentParser(
-        description = 'This program takes a little bootstrap sample from the \
+        description = 'This script takes a little bootstrap sample from the \
         specified CSV data set and fits a linear regression. The last column \
         of the data set is assumed to be the response. When no arguments are \
-        specified, the mini data set is used, provided it is in the data \
+        specified, the mini data set is used, provided it is in the data/ \
         sub-directory.')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-i', metavar = 'JOB',

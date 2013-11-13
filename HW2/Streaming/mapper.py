@@ -1,6 +1,9 @@
 #!/usr/bin/env python2
 # mapper.py
 # Author: Nick Ulle
+# Description:
+#   This is the mapper script for HW2, part 2. It takes tab-delimited data from
+#   stdin and writes tab-delimited (key, value) pairs to stdout.
 
 import sys
 

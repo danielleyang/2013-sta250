@@ -1,6 +1,9 @@
 #!/usr/bin/env python2
 # reducer.py
 # Author: Nick Ulle
+# Description:
+#   This is the reducer script for HW2, part 2. It takes tab-delimited (key,
+#   value) pairs from stdin and writes group counts to stdout as CSV.
 
 import sys
 

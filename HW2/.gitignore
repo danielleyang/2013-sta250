@@ -1,7 +1,6 @@
 *.pyc
 tex/*.pdf
-tex/res/
 data/
 dump/
-final/
 output/
+binned-output/
