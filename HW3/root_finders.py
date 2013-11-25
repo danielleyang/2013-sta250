@@ -32,9 +32,7 @@ def root_bisection(f, interval, tol = 10 ** -6, max_iter = 10 ** 6,
         # Throw some kind of error.
         raise Exception('Invalid interval, signs at endpoints are the same.')
 
-    iter = 0
-    while True:
-        iter += 1
+    for iter in range(1, max_iter + 1):
         mid = (l + u) / 2
         value = f(mid)
 
@@ -44,7 +42,7 @@ def root_bisection(f, interval, tol = 10 ** -6, max_iter = 10 ** 6,
             print '  Middle: f({0:.4g}) = {1:.4g}'.format(mid, f(mid))
             print '  Upper:  f({0:.4g}) = {1:.4g}'.format(u, f(u))
 
-        if abs(value) < tol or iter >= max_iter:
+        if abs(value) < tol:
             # Nothing left to do.
             break
         elif f(l) * value < 0:
@@ -55,7 +53,6 @@ def root_bisection(f, interval, tol = 10 ** -6, max_iter = 10 ** 6,
             l = mid
 
     return (mid, value, iter)
-
 
 def root_newton(f, df, x0, tol = 10 ** -6, max_iter = 10 ** 6, 
                 verbose = False):
@@ -75,5 +72,18 @@ def root_newton(f, df, x0, tol = 10 ** -6, max_iter = 10 ** 6,
         A tuple containing the root, the value of the function at the root, and
         the number of iterations run.
     '''
-    pass
+    x = x0
+    for iter in range(1, max_iter + 1):
+        # This loop could be made marginally faster by reducing the number of
+        # calls to f, but at the cost of clarity.
+        x = x - (f(x) / df(x))
+
+        if verbose and iter % verbose == 0:
+            print 'Iteration {0}:'.format(iter)
+            print '  f({0:.4g}) = {1:.4g}'.format(x, f(x))
+
+        if abs(f(x)) < tol:
+            break
+
+    return (x, f(x), iter)
 
