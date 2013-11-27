@@ -1,0 +1,629 @@
+
+\input{LatexHeader.tex}
+\pagestyle{name}
+\title{STA 250: Homework 3}
+
+\begin{document}
+\chapter*{Report}
+\begin{enumerate}
+\item % ----- Q1 
+The likelihood in the linkage problem is
+    \[
+    L(\lambda) = (2 + \lambda)^{125} (1 - \lambda)^{18+20} \lambda^{34},
+    \]
+so the log-likelihood is
+    \[
+    l(\lambda) = 125\ln(2 + \lambda) + 38\ln(1 - \lambda) + 34\ln(\lambda).
+    \]
+The derivative with respect to $\lambda$ is
+    \[
+    l'(\lambda) = \frac{125}{2 + \lambda} - \frac{38}{1 - \lambda}
+    + \frac{34}{\lambda}
+    \]
+and the second derivative is
+    \[
+    l''(\lambda) 
+    =
+    -\frac{125}{(2 + \lambda)^2} - \frac{38}{(1 - \lambda)^2}
+    -\frac{34}{\lambda^2}.
+    \]
+Since the likelihood has several discontinuities,
+and the log-likelihood is only defined on $(0, 1)$,
+the root-finding algorithms were only applied to $(-2, 0)$ and $(0, 1)$.
+They converged to the values shown in table~\ref{tab:roots}.
+The Newton-Raphson algorithm was started at $-1$ and $0.5$, respectively.
+The tolerance was set to $10^{-10}$ in all cases.
+We conclude that the MLE is $\hat{\lambda} \approx 0.6268$.
+    \begin{table}[h]
+    \begin{tabular}{lrrr}
+    \toprule
+    Method & Estimate & Iterations & Log-likelihood \\
+    \midrule
+    Bisection & -0.5507 & 41 & -- \\
+    Newton-Raphson & -0.5507 & 5 & -- \\
+    \midrule
+    Bisection & 0.6268 & 39 & 67.38 \\
+    Newton-Raphson & 0.6268 & 5 & 67.38 \\
+    \bottomrule
+    \end{tabular}
+    \caption{
+    Results of applying the root-finding algorithms on $(-2, 0)$ and $(0, 1)$,
+    at top and bottom, respectively.
+    }
+    \label{tab:roots}
+    \end{table}
+
+\item % ----- Q2 
+We are given the multivariate-t regression model
+    \[
+    Y_i \sim \dist{t}_p \bigl( \mu, \tfrac{1}{\tau_i}, \Psi \bigr),
+    \qquad
+    i = 1, \ldots, n,
+    \]
+which can also be written as
+    \[
+    Y_i \vert \tau_i, \theta 
+    \sim
+    \dist{N}_p \bigl( \mu, \tfrac{1}{\tau_i}\Psi \bigr)
+    \qquad\text{and}\qquad
+    \tau_i
+    \sim
+    \tfrac{1}{\nu} \dist{\chi^2}(\nu),
+    \]
+where $\theta = (\mu, \Psi)$ is the unknown parameter to be estimated,
+and $\nu$ is a known constant.
+Denote the observed data by $Y = (Y_1, \ldots, Y_n)$
+and the missing data by $\tau = (\tau_1, \ldots, \tau_n)$
+In each iteration, the EM algorithm maximizes
+    \[
+    Q(\theta \vert \theta^{(t)})
+    =
+    \E \bigl[ \ln p(\tau, Y \vert \theta) \big\vert Y, \theta^{(t)} \bigr],
+    \]
+so we must first compute the joint density.
+We know that the density of $Y \vert \tau, \theta$ is
+    \[
+    p(Y \vert \tau, \theta)
+    \propto
+    \det(\Psi)^{-n/2} 
+    \exp \biggl[
+    -\frac{1}{2}\sum_{i=1}^n (Y_i - \mu)\T \tau_i \Psi^{-1} (Y_i - \mu) 
+    \biggr].
+    \]
+Since $\tau$ is ancillary for $\theta$, its density has no effect on the
+maximization of $Q$, and may be neglected.
+Therefore
+    \begin{align*}
+    Q(\theta \vert \theta^{(t)})
+    &=
+    \E \biggl[
+    n\ln [ \det(\Psi^{-1}) ]
+    - \sum_{i=1}^n (Y_i - \mu)\T \tau_i \Psi^{-1} (Y_i - \mu)
+    \Big\vert Y, \theta^{(t)}
+    \biggr]
+    \\ &=
+    n\ln [ \det(\Psi^{-1}) ]
+    - \sum_{i=1}^n (Y_i - \mu)\T \Psi^{-1} (Y_i - \mu)
+    \E \bigl[ \tau_i \vert Y, \theta^{(t)} \bigr]
+    \end{align*}
+Then since
+    \[
+    \pd{\mu} Q(\theta \vert \theta^{(t)})
+    =
+    \sum_{i=1}^n 2\Psi^{-1} (Y_i - \mu)
+    \E \bigl[ \tau_i \vert Y, \theta^{(t)} \bigr]
+    \]
+the maximizer in $\mu$ is
+    \begin{equation}
+    \label{eqn:mu}
+    \mu^{(t+1)}
+    =
+    \frac {\sum_{i=1}^n Y_i \E \bigl[ \tau_i \vert Y, \theta^{(t)} \bigr]} 
+    {\sum_{j=1}^n \E \bigl[ \tau_j \vert Y, \theta^{(t)} \bigr]}.
+    \end{equation}
+Now take the trace of $Q$, which is equal since $Q$ is scalar-valued,
+to find
+    \begin{align*}
+    Q(\theta \vert \theta^{(t)})
+    &=
+    n\ln [ \det(\Psi^{-1}) ]
+    - \sum_{i=1}^n \tr \bigl[
+    (Y_i - \mu)\T \Psi^{-1} (Y_i - \mu)
+    \bigr]
+    \E \bigl[ \tau_i \vert Y, \theta^{(t)} \bigr]
+    \\ &=
+    n\ln [ \det(\Psi^{-1}) ]
+    - \sum_{i=1}^n \tr \bigl[
+    \Psi^{-1} (Y_i - \mu) (Y_i - \mu)\T
+    \bigr]
+    \E \bigl[ \tau_i \vert Y, \theta^{(t)} \bigr]
+    \\ &=
+    n\ln [ \det(\Psi^{-1}) ]
+    - \tr \biggl[ \Psi^{-1} \sum_{i=1}^n
+    (Y_i - \mu) (Y_i - \mu)\T
+    \E \bigl[ \tau_i \vert Y, \theta^{(t)} \bigr]
+    \biggr].
+    \end{align*}
+Based on the helpful facts provided with the assignment, 
+the maximizer in $\Psi$ for a function of this form is the matrix
+    \begin{equation}
+    \label{eqn:psi}
+    \Psi^{(t+1)}
+    =
+    \frac{1}{n} \sum_{i=1}^n
+    (Y_i - \mu) (Y_i - \mu)\T
+    \E \bigl[ \tau_i \vert Y, \theta^{(t)} \bigr].
+    \end{equation}
+Therefore $\theta^{(t+1)}$ can be computed by using the fact that
+    \[
+    \E \bigl[ \tau_i \vert Y, \theta^{(t)} \bigr]
+    =
+    \frac{
+        \nu + p
+    }{
+        \nu + (Y_i - \mu^{(t)})\T [\Psi^{(t)}]^{-1} (Y_i - \mu^{(t)})
+    }
+    \]
+to compute $\mu_{(t+1)}$ from equation~\ref{eqn:mu},
+and then substituting $\mu = \mu_{(t+1)}$ into equation~\ref{eqn:psi}
+in order to compute $\Psi^{(t+1)}$.
+
+\item % ----- Q3 
+We are given the hierarchical Poisson model
+    \[
+    Y_i \vert \lambda_i \sim \dist{Pois}(\lambda_i),
+    \qquad
+    \lambda_i \vert \beta \sim \dist{Gamma}(1, \beta),
+    \qquad
+    i = 1, \ldots, n.
+    \]
+Let $Y = (Y_1, \ldots, Y_n)$ denote the observed data.
+    \begin{enumerate}
+    \item \label{q:sa}
+    For this part, let $\lambda = (\lambda_1, \ldots, \lambda_n)$ denote the
+    missing data.
+    In each iteration, the EM algorithm for this model maximizes
+        \[
+        Q_\mathrm{S}(\beta \vert \beta^{(t)})
+        =
+        \E \bigl[ 
+        \ln p(\lambda, Y \vert \beta) \big\vert Y, \beta^{(t)} 
+        \bigr].
+        \]
+    The parameter $\beta$ doesn't appear in the density of $Y \vert \lambda$,
+    so we only need consider the density of $\lambda \vert \beta$,
+    which is
+        \[
+        p(\lambda \vert \beta)
+        =
+        \beta^n \exp\biggl[ -\beta\sum_{i=1}^n \lambda_i \biggr].
+        \]
+    Thus the function $Q_\mathrm{S}$ is
+        \begin{align*}
+        Q_\mathrm{S}(\beta \vert \beta^{(t)})
+        &=
+        \E\biggl[
+        n\ln\beta - \beta\sum_{i=1}^n 
+        \lambda_i \Big\vert Y, \beta^{(t)}
+        \biggr]
+        \\ &=
+        n\ln\beta - \beta\sum_{i=1}^n 
+        \E\bigl[ \lambda_i \vert Y, \beta^{(t)} \bigr],
+        \end{align*}
+    and the derivative in $\beta$ is
+        \[
+        \pd{\beta} Q_\mathrm{S}(\beta \vert \beta^{(t)})
+        =
+        n\beta^{-1} - \sum_{i=1}^n
+        \E\bigl[ \lambda_i \vert Y, \beta^{(t)} \bigr].
+        \]
+    Equating this to 0 reveals that the maximizer in $\beta$ is
+        \[
+        \beta_\mathrm{S}^{(t+1)}
+        =
+        \frac{n}{\sum_{i=1}^n \E\bigl[ \lambda_i \vert Y, \beta^{(t)} \bigr]}.
+        \]
+    In order to make this explicit, we must compute the expectation.
+    The density of $\lambda_i \vert Y_i, \beta^{(t)}$ is
+        \begin{align*}
+        p(\lambda_i \vert Y_i, \beta^{(t)})
+        &\propto
+        p(Y_i \vert \lambda_i) p(\lambda_i \vert \beta^{(t)})
+        \\ &\propto
+        \eul^{-\lambda_i} \lambda_i^{Y_i} \eul^{-\beta^{(t)} \lambda_i}
+        \\ &\propto
+        \lambda^{Y_i} \eul^{-(\beta^{(t)} + 1)\lambda_i}
+        \\ &\sim
+        \dist{Gamma}(Y_i + 1, \beta^{(t)} + 1),
+        \end{align*}
+    and the expectation of a gamma distributions is given as
+        \[
+        \E\bigl[ \lambda_i \vert Y, \beta^{(t)} \bigr]
+        =
+        \frac{Y_i + 1}{\beta^{(t)} + 1}.
+        \]
+    Therefore the EM algorithm update is
+        \begin{equation}
+        \label{eqn:sa}
+        \beta_\mathrm{S}^{(t+1)}
+        =
+        \frac{\beta^{(t)} + 1}{\bar{Y} + 1}.
+        \end{equation}
+
+    \item \label{q:aa}
+    The cumulative distribution function for $\lambda_i \vert \beta$ is
+        \[
+        F(u \vert \beta)
+        =
+        1 - \eul^{-\beta u},
+        \qquad
+        u > 0,
+        \]
+    and its inverse is
+        \[
+        F^{-1}(v \vert \beta)
+        =
+        -\beta^{-1} \ln(1 - v),
+        \qquad
+        0 < v < 1.
+        \]
+    Define the random variables
+        \[
+        \eta_i
+        =
+        1 - \eul^{-\beta \lambda_i}
+        =
+        F(\lambda_i \vert \beta)
+        \sim
+        \dist{U}(0, 1),
+        \qquad
+        i = 1, \ldots, n,
+        \]
+    and let $\eta = (\eta_1, \ldots, \eta_n)$ denote the missing data for this
+    part.
+    Then an ancillary augmentation counterpart to the given sufficient
+    augmentation is the model
+        \[
+        Y_i \vert \eta_i, \beta \sim 
+        \dist{Poi} \bigl( -\beta^{-1} \ln(1 - \eta_i) \bigr),
+        \qquad
+        \eta_i \sim \dist{U}(0, 1).
+        \]
+    In each iteration, the EM algorithm for this model maximizes
+        \[
+        Q_\mathrm{A}(\beta \vert \beta^{(t)})
+        =
+        \E \bigl[ 
+        \ln p(\eta, Y \vert \beta) \big\vert Y, \beta^{(t)} 
+        \bigr].
+        \]
+    The parameter $\beta$ doesn't appear in the density for $\eta$,
+    so we need only consider the density of $Y \vert \eta, \beta$,
+    which is
+        \[
+        p(Y \vert \eta, \beta)
+        \propto
+        \exp \biggl[ \beta^{-1}\sum_{i=1}^n \ln(1 - \eta_i) \biggr]
+        \beta^{-n\bar{Y}},
+        \]
+    where all terms that don't depend on $\beta$ have been omitted.
+    Then the function $Q_\mathrm{A}$ is
+        \begin{align*}
+        Q_\mathrm{A}(\beta \vert \beta^{(t)})
+        &=
+        \E \biggl[ 
+        \beta^{-1}\sum_{i=1}^n \ln(1 - \eta_i) - n\bar{Y}\ln\beta
+        \Big\vert Y, \beta^{(t)} \biggr]
+        \\ &=
+        \beta^{-1}\sum_{i=1}^n 
+        \E\bigl[ \ln(1 - \eta_i) \vert Y, \beta^{(t)} \bigr]
+        - n\bar{Y}\ln\beta
+        \\ &=
+        -\beta^{(t)}\beta^{-1}\sum_{i=1}^n 
+        \E\bigl[ -(\beta^{(t)})^{-1}\ln(1 - \eta_i) \vert Y, \beta^{(t)} \bigr]
+        - n\bar{Y}\ln\beta
+        \\ &=
+        -\beta^{(t)}\beta^{-1}
+        \sum_{i=1}^n \E\bigl[ \lambda_i \vert Y, \beta^{(t)} \bigr]
+        - n\bar{Y}\ln\beta,
+        \end{align*}
+    and the derivative in $\beta$ is
+        \[
+        \pd{\beta} Q_\mathrm{A}(\beta \vert \beta^{(t)})
+        =
+        \beta^{(t)}\beta^{-2}
+        \sum_{i=1}^n \E\bigl[ \lambda_i \vert Y, \beta^{(t)} \bigr]
+        - n\bar{Y}\beta^{-1}.
+        \]
+    Equating this to 0, we have
+        \[
+        0 
+        = 
+        \beta^{(t)} \sum_{i=1}^n \E\bigl[ \lambda_i \vert Y, \beta^{(t)} \bigr]
+        - n\bar{Y}\beta,
+        \]
+    so the maximizer in $\beta$ is
+        \begin{align} \label{eqn:aa}
+        \notag
+        \beta_\mathrm{A}^{(t+1)}
+        &=
+        \frac{\beta^{(t)}}{\bar{Y}} \cdot \frac{1}{n}
+        \sum_{i=1}^n \E\bigl[ \lambda_i \vert Y, \beta^{(t)} \bigr]
+        \\ &=\notag
+        \frac{\beta^{(t)}}{\bar{Y}} \cdot 
+        \frac{\bar{Y} + 1}{\beta^{(t)} + 1}
+        \\ &=
+        \frac{1 + \bar{Y}^{-1}}{1 + 1 / \beta^{(t)}}.
+        \end{align}
+    This is also the EM algorithm update.
+
+    \item
+    We will use the ancillary augmentation as the first scheme and the
+    sufficient augmentation as the second scheme in the interwoven EM,
+    with the notations from both part~\ref{q:sa} and part~\ref{q:aa}.
+    Define
+        \[
+        \beta_\mathrm{I}^{(t+0.5)}
+        =
+        \beta_\mathrm{S}^{(t+1)}
+        =
+        \frac{\beta^{(t)} + 1}{\bar{Y} + 1}
+        \]
+    from the SA update (equation~\ref{eqn:sa}).
+    In each iteration, the IEM algorithm maximizes
+        \begin{align*}
+        Q_\mathrm{I}(\beta \vert \beta^{(t)})
+        &=
+        \E_\mathrm{S} \biggl[
+        \E_\mathrm{A} \Bigl[
+        \ln p(\eta, Y \vert \beta) 
+        \big\vert Y, \lambda, \beta_\mathrm{I}^{(t+0.5)} \Bigl] 
+        \Big\vert Y, \beta^{(t)} \biggr]
+        \\ &=
+        \E_\mathrm{S} \biggl[
+        \E_\mathrm{A} \Bigl[
+        \beta^{-1}\sum_{i=1}^n \ln(1 - \eta_i) - n\bar{Y}\ln\beta
+        \big\vert Y, \lambda, \beta_\mathrm{I}^{(t+0.5)} \Bigl] 
+        \Big\vert Y, \beta^{(t)} \biggr]
+        \\ &=
+        \E_\mathrm{S} \biggl[
+            \beta^{-1}\sum_{i=1}^n 
+            \E_\mathrm{A} \bigl[
+                \ln(1 - \eta_i) 
+            \vert Y, \lambda, \beta_\mathrm{I}^{(t+0.5)} \bigl]
+            - n\bar{Y}\ln\beta
+        \Big\vert Y, \beta^{(t)} \biggr]
+        \\ &=
+        \E_\mathrm{S} \biggl[
+            -\beta_\mathrm{I}^{(t+0.5)} \beta^{-1}\sum_{i=1}^n 
+            \E_\mathrm{A} \bigl[
+                \lambda_i
+            \vert Y, \lambda, \beta_\mathrm{I}^{(t+0.5)} \bigl]
+            - n\bar{Y}\ln\beta
+        \Big\vert Y, \beta^{(t)} \biggr]
+        \\ &=
+        \E_\mathrm{S} \biggl[
+            -\beta_\mathrm{I}^{(t+0.5)} \beta^{-1}\sum_{i=1}^n 
+            \lambda_i
+            - n\bar{Y}\ln\beta
+        \Big\vert Y, \beta^{(t)} \biggr]
+        \\ &=
+        -\beta_\mathrm{I}^{(t+0.5)} \beta^{-1}\sum_{i=1}^n 
+        \E_\mathrm{S} [
+            \lambda_i
+        \vert Y, \beta^{(t)} ]
+        - n\bar{Y}\ln\beta.
+        \end{align*}
+    The derivative in $\beta$ is
+        \[
+        \pd{\beta} Q_\mathrm{I}(\beta \vert \beta^{(t)})
+        =
+        \beta_\mathrm{I}^{(t+0.5)} \beta^{-2}\sum_{i=1}^n 
+        \E_\mathrm{S} [
+            \lambda_i
+        \vert Y, \beta^{(t)} ]
+        - n\bar{Y}\beta^{-1}.
+        \]
+    Equating this to 0, we have
+        \[
+        0
+        =
+        \beta_\mathrm{I}^{(t+0.5)} 
+        \sum_{i=1}^n \E_\mathrm{S} [
+            \lambda_i
+        \vert Y, \beta^{(t)} ]
+        - n\bar{Y}\beta,
+        \]
+    so the maximizer in $\beta$ is
+        \begin{align*}
+        \beta_\mathrm{I}^{(t+1)}
+        &=
+        \beta_\mathrm{I}^{(t+0.5)} \cdot
+        \frac{
+            \sum_{i=1}^n \E_\mathrm{S} [
+                \lambda_i
+            \vert Y, \beta^{(t)} ]
+        }{
+            n\bar{Y}
+        }
+        \\ &=
+        \frac{\beta^{(t)} + 1}{\bar{Y} + 1} \cdot
+        \frac{\bar{Y} + 1}{(\beta^{(t)} + 1)\bar{Y}}
+        \\&=
+        \bar{Y}^{-1}
+        \end{align*}
+    Thus the IEM converges in one iteration.
+
+    \item
+    The single-observation likelihood for the given model is
+        \begin{align*}
+        p(Y_i \vert \beta)
+        &=
+        \int_0^\infty\!\! 
+        p(\lambda_i, Y_i \vert \beta) 
+        \df{\lambda_i}
+        \\ &=
+        \int_0^\infty\!\! 
+        p(Y_i \vert \lambda_i) p(\lambda_i \vert \beta)
+        \df{\lambda_i}
+        \\ &=
+        \frac{\beta}{Y_i!}
+        \int_0^\infty\!\!
+        \eul^{-\lambda_i} \lambda_i^{Y_i} 
+        \eul^{-\beta \lambda_i}
+        \df{\lambda_i}
+        \\ &=
+        \frac{\beta}{Y_i!}
+        \int_0^\infty\!\!
+        \lambda^{Y_i} \eul^{-(\beta + 1)\lambda_i}
+        \df{\lambda_i},
+    \intertext{
+    and by noticing that the integrand is part of a 
+    $\dist{Gamma(Y_i + 1, \beta + 1)}$ density,
+    }
+        &=
+        \frac{\beta}{Y_i!} \cdot
+        Y_i! \Bigl( \frac{1}{\beta + 1} \Bigr)^{Y_i + 1}
+        \\ &=
+        \beta \Bigl( \frac{1}{\beta + 1} \Bigr)^{Y_i + 1}.
+        \end{align*}
+    It follows by independence that the observed data likelihood is
+        \[
+        p(Y \vert \beta)
+        =
+        \beta^n \Bigl( \frac{1}{\beta + 1} \Bigr)^{n(\bar{Y} + 1)}
+        \]
+    and hence the log likelihood is
+        \[
+        l(\beta)
+        =
+        \ln p(Y \vert \beta)
+        =
+        n\ln\beta - n(\bar{Y} + 1)\ln(\beta + 1).
+        \]
+    Then
+        \[
+        \pd{\beta} l(\beta)
+        =
+        n\beta^{-1} - n(\bar{Y} + 1)(\beta + 1)^{-1}.
+        \]
+    Equating this to 0 leads to
+        \begin{align*}
+        0
+        &=
+        \beta^{-1} - (\bar{Y} + 1)(\beta + 1)^{-1}
+        \\ &=
+        (\beta + 1) - (\bar{Y} + 1)\beta
+        \\ &=
+        1 - \bar{Y}\beta
+        \\
+        \beta
+        &=
+        \bar{Y}^{-1}.
+        \end{align*}
+    Therefore the MLE for $\beta$ is $\hat{\beta} = \bar{Y}^{-1}$.
+
+    \item
+    For the sufficient augmentation scheme, the update operator is
+        \[
+        M_\mathrm{S}(\beta)
+        =
+        \frac{1 + \beta}{1 + \bar{Y}},
+        \]
+    based on equation~\ref{eqn:sa}. The Taylor expansion about $\bar{Y}^{-1}$
+    is
+        \begin{align*}
+        M_\mathrm{S}(\beta)
+        &\approx
+        \frac{1 + \bar{Y}^{-1}}{1 + \bar{Y}}
+        + \frac{1}{1 + \bar{Y}} (\beta - \bar{Y}^{-1})
+        \\ &\approx
+        \bar{Y} + \frac{1}{1 + \bar{Y}} (\beta - \bar{Y}^{-1}).
+        \end{align*}
+    It follows that
+        \[
+        \beta_\mathrm{S}^{(t+1)} - \bar{Y}^{-1}
+        \approx
+        \frac{1}{1 + \bar{Y}} (\beta^{(t)} - \bar{Y}^{-1})
+        \]
+    so the rate of convergence is approximately
+        \[
+        \rho_\mathrm{S}
+        =
+        \frac{1}{1 + \bar{Y}}.
+        \]
+    For the ancillary augmentation scheme, the update operator is
+        \begin{align*}
+        M_\mathrm{A}(\beta)
+        &=
+        \frac{1 + \bar{Y}^{-1}}{1 + \beta^{-1}},
+        \end{align*}
+    based on equation~\ref{eqn:aa}.
+    The Taylor expansion about $\bar{Y}^{-1}$ is
+        \begin{align*}
+        M_\mathrm{A}(\beta) - \bar{Y}^{-1}
+        &\approx
+        \frac{1 + \bar{Y}^{-1}}{1 + \bar{Y}}
+        + \biggl[
+        \frac{(1 + \bar{Y}^{-1})\beta^{-2}}{(1 + \beta^{-1})^2}
+        \biggr]_{\beta = \bar{Y}^{-1}}
+        (\beta - \bar{Y}^{-1})
+        \\ &\approx
+        \bar{Y}
+        + \biggl[
+        \frac{1 + \bar{Y}^{-1}} {(1 + \beta)^2}
+        \biggr]_{\beta = \bar{Y}^{-1}}
+        (\beta - \bar{Y}^{-1})
+        \\ &\approx
+        \bar{Y}
+        + \frac{1} {1 + \bar{Y}^{-1}}
+        (\beta - \bar{Y}^{-1}),
+        \end{align*}
+    so it follows that
+        \[
+        \beta_\mathrm{A}^{(t+1)} - \bar{Y}^{-1}
+        \approx
+        \frac{1} {1 + \bar{Y}^{-1}}
+        (\beta^{(t)} - \bar{Y}^{-1}).
+        \]
+    Thus the rate of convergence is approximately
+        \[
+        \rho_\mathrm{A}
+        =
+        \frac{1} {1 + \bar{Y}^{-1}}.
+        \]
+    Smaller convergence rates are better, so we can solve the inequality
+        \begin{align*}
+        \rho_\mathrm{S}
+        =
+        \frac{1}{1 + \bar{Y}}
+        &>
+        \frac{1}{1 + \bar{Y}^{-1}}
+        =
+        \rho_\mathrm{A}
+        \\
+        1 + \bar{Y} &< 1 + \bar{Y}^{-1}
+        \\
+        \bar{Y} + \bar{Y}^2 &< \bar{Y} + 1
+        \\
+        \bar{Y}^2 &< 1
+        \\
+        \bar{Y} &< 1
+        \end{align*}
+    to see that the ancillary augmentation scheme is superior when 
+    $\bar{Y} < 1$, 
+    while the sufficient augmentation scheme is superior when $\bar{Y} > 1$.
+    That being said, the interwoven scheme converges in one iteration,
+    so it's superior to both of the other schemes,
+    regardless of the value of $\bar{Y}$.
+
+    \end{enumerate}
+
+\end{enumerate}
+
+\clearpage
+\chapter*{Source Code}
+\hrule
+\lstinputlisting{../root_finders.py}
+
+\end{document}
