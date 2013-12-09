@@ -4,7 +4,7 @@
  *  CUDA C functions for generating truncated normal random variables.
  *
  *  Compile with:
- *      nvcc --ptx -arch=compute_20 gpu_trunc_norm.cu -o gpu_trunc_norm.ptx
+ *      nvcc --ptx -arch=compute_20 gpu_trunc_norm.cu -o bin/gpu_trunc_norm.ptx
  */
 
 #include <stdio.h>

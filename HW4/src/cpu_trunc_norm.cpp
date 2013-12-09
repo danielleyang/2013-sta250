@@ -5,7 +5,7 @@
  *  using the new random library added in the C++11 standard.
  *
  *  Compile with:
- *      g++ -std=c++0x -fPIC -shared -o cpu_trunc_norm.so cpu_trunc_norm.cpp
+ *      g++ -std=c++0x -fPIC -shared -o bin/cpu_trunc_norm.so cpu_trunc_norm.cpp
  */
 
 #include <random>

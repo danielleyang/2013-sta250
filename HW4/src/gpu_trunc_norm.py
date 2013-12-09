@@ -12,7 +12,7 @@ import pycuda.driver as cuda
 
 # ----- PTX Module Setup
 # Import PTX module and setup its functions.
-_gpu_module = cuda.module_from_file('gpu_trunc_norm.ptx')
+_gpu_module = cuda.module_from_file('bin/gpu_trunc_norm.ptx')
 
 _gpu_trunc_norm = _gpu_module.get_function('gpu_trunc_norm')
 _gpu_curand_init = _gpu_module.get_function('gpu_curand_init')

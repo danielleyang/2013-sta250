@@ -11,7 +11,7 @@ import numpy as np
 _c_float_p = np.ctypeslib.ndpointer(dtype = np.float32)
 
 # Import C library and setup its functions.
-_cpu_lib = np.ctypeslib.load_library('cpu_trunc_norm.so', '.')
+_cpu_lib = np.ctypeslib.load_library('cpu_trunc_norm.so', './bin')
 
 _set_seed = _cpu_lib.set_seed
 _set_seed.argtypes = [ct.c_int]
