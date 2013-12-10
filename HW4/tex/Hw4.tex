@@ -1,0 +1,169 @@
+
+\input{LatexHeader.tex}
+\pagestyle{name}
+\title{STA 250: Homework 4}
+
+\begin{document}
+\chapter*{Part 1}
+The function \texttt{gpu\_trunc\_norm()} allows sampling from the truncated
+normal distribution on the GPU.
+When the truncation region is a left or right tail, it uses the methods
+described in Robert~(2009).
+In all other cases, it uses rejection sampling from a normal distribution.
+Maximum iterations are capped at 100 to guarantee a finite runtime.
+It is assumed that random number generators will be pre-initialized on the
+graphics device before, and convenience functions are included to perform this
+initialization and an eventual de-initialization.
+The sampling function could be improved by adopting the other procedures
+described in Robert~(2009),
+by allowing user control of the maximum number of iterations,
+and by outputting a warning when the maximum number of iterations is achieved.
+As written, the function produces results that are not reproducible.
+A strategy where a relatively small number of threads are run,
+each sampling multiple values using their own private random number generator,
+would make the results reproducible.
+This would also improve scalability, since the maximum number of samples drawn
+in one call would no longer be restricted by hardware limitations.
+
+Sampling from the truncated normal distribution on the CPU is provided by
+the correspondingly named function \texttt{cpu\_trunc\_norm()}.
+The details of the algorithm are identical,
+with random number generation provided by the Mersenne Twister implementation
+included in the recent C++11 standard.
+A convenience function is included for setting the seed,
+and results from this sampling function are reproducible.
+
+A Python script is included to perform verifications that these functions
+produce samples with the correct means based on theory.
+They performed well when the truncation region included the mean or was
+one-sided, but as expected, did poorly when the truncation region was
+two-sided and did not include the mean.
+Again, this could be remedied by adopting the full algorithm described in
+Robert~(2009).
+Timings of these functions when sampling $n = 10^k$ values from
+$\dist{N}(2, 1)$ truncated to $(0, 1.5)$, for each of $k = 1, \ldots, 8$,
+are shown in figure~.
+The CPU function performs better for $k = 1, 2$ but the GPU function performs
+better otherwise.
+This is a little surprising, because the CPU function is written in C++.
+PyCUDA appears to do a superb job at minimizing the overhead of using the GPU.
+
+    \begin{figure}[p]
+    \includegraphics[width = 0.9\textwidth]{res/timings.png}
+    \caption{
+        Comparison of CPU and GPU timings for sampling $10^k$ values.
+    }
+    \label{fig:timings}
+    \end{figure}
+
+\chapter*{Part 2}
+The probit model is
+    \begin{gather*}
+    Y_i \vert Z_i = \on{Z_i > 0}
+    \\
+    Z_i \vert \beta \sim \dist{N}(x_i\T\beta, 1)
+    \\
+    \beta \sim \dist{N}_p(\beta_0, \Sigma_0)
+    \end{gather*}
+for $\beta_0$ a $p \times 1$ vector.
+Define $X = (x_1\T, \ldots, x_n\T)$, so that that
+    \[
+    Z \vert \beta \sim \dist{N}_n(X\beta, \eye_n).
+    \]
+It follows that the posterior density of $\beta$ is
+    \begin{align*}
+        p(\beta \vert Z, Y)
+    &\propto
+        p(Y \vert Z, \beta) p(Z \vert \beta) p(\beta)
+    \\ &\propto
+        \exp \biggl[ -\frac{1}{2} (Z - X\beta)\T (Z - X\beta) \biggr]
+        \exp \biggl[ -\frac{1}{2} (\beta - \beta_0)\T \Sigma_0^{-1}
+        (\beta - \beta_0) \biggr].
+    \end{align*}
+The exponential is quadratic in $\beta$, so this is a multivariate normal
+density, and since
+    \begin{align*}
+    &
+        Z\T Z - 2\beta\T X\T Z + \beta\T X\T X \beta
+        + \beta\T \Sigma_0^{-1} \beta - 2 \beta\T \Sigma_0^{-1} \beta_0
+        + \beta_0\T \Sigma_0^{-1} \beta_0
+    \\ &=
+        \beta\T (X\T X + \Sigma_0^{-1}) \beta
+        - 2\beta\T (X\T Z + \Sigma_0^{-1})
+        + \ldots
+    \end{align*}
+the mean and variance are
+    \begin{gather*}
+    \beta_0^* = (X\T X + \Sigma_0^{-1})^{-1} (X\T Z + \Sigma_0^{-1})
+    \\
+    \Sigma_0^* = (X\T X + \Sigma_0^{-1})^{-1}.
+    \end{gather*}
+Combined with the fact that
+    \begin{gather*}
+    Z_i \vert Y_i = 0, \beta \sim \dist{N}(x_i\T \beta, 1) \1_{(0, \infty)}
+    \\
+    Z_i \vert Y_i = 1, \beta \sim \dist{N}(x_i\T \beta, 1) \1_{(-\infty, 0)},
+    \end{gather*}
+this suggests we can sample from $\beta \vert Y$ by using a Gibbs sampler to
+sample from $Z, \beta \vert Y$.
+
+The probit MCMC was implemented as the function \texttt{probit\_mcmc()}.
+This function includes a parameter controlling whether the GPU or CPU should
+be used when sampling from the truncated normal distribution.
+It was used to calculate posterior means for datasets 1 through 5,
+and the results were close to the true means in all cases,
+with sharper results for the larger datasets.
+Timings of the GPU and CPU code are presented in table~\ref{tab:timings_mcmc}
+and figure~\ref{fig:timings_mcmc}.
+Both methods exhibit runtimes that are linear in the sample size
+(provided the sample size is large enough to amortize fixed overhead),
+but the CPU code is only competetive with the GPU code for the first
+and smallest dataset.
+On the large datasets, the GPU code is about 5 times faster
+than the CPU code, which is a substantial speedup.
+
+    \begin{table}[h]
+    \begin{tabular}{lrr}
+    \toprule
+    Dataset & GPU & CPU \\
+    \midrule
+    \input{res/timings_mcmc.tex}
+    \bottomrule
+    \end{tabular}
+    \caption{
+        GPU and CPU timings, in seconds, for probit MCMC.
+    }
+    \label{tab:timings_mcmc}
+    \end{table}
+
+This was an especially interesting assignment,
+because I not only learned to program in CUDA C,
+but also learned about the changes in the new C++11 standard
+and how to call C/C++ code from Python.
+
+    \begin{figure}[p]
+    \includegraphics[width = 0.9\textwidth]{res/timings_mcmc.png}
+    \caption{
+        Comparison of CPU and GPU timings for probit MCMC.
+    }
+    \label{fig:timings_mcmc}
+    \end{figure}
+
+\clearpage
+\chapter*{Source Code}
+\hrule
+\lstinputlisting{../src/gpu_trunc_norm.py}
+\hrule
+\lstinputlisting{../src/gpu_trunc_norm.cu}
+\hrule
+\lstinputlisting{../src/cpu_trunc_norm.py}
+\hrule
+\lstinputlisting{../src/cpu_trunc_norm.cpp}
+\hrule
+\lstinputlisting{../src/trunc_norm_diag.py}
+\hrule
+\lstinputlisting{../src/probit_mcmc.py}
+\hrule
+\lstinputlisting{../src/postproc_timings.R}
+
+\end{document}
