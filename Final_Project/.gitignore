@@ -1,0 +1,4 @@
+*.pyc
+*.pdf
+out/
+tex/res/

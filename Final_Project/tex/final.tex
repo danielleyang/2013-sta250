@@ -1,0 +1,439 @@
+
+\input{LatexHeader}
+\pagestyle{name}
+\title{STA 250: Final Project}
+\author{Nicholas Ulle}
+
+\captionsetup[sub]{font = scriptsize}
+
+\begin{document}
+\maketitle
+\clearpage
+\chapter*{Introduction}
+Markov chain Monte Carlo methods are especially useful in situations where
+the distribution of interest has a density that is difficult or impossible to
+compute analytically, because they avoid direct integration and
+instead rely on central limit theorem consistency results.
+However, for these results to be valid, it's essential that the method used
+explores the state space effectively, leaving no probability mass unrecognized.
+In this setting, it's also unlikely that the practitioner will have much 
+advance knowledge about the distribution of interest, so checking how well
+the state space was explored is difficult.
+Particularly problematic are multi-modal distributions with relatively
+isolated modes, because standard MCMC methods tend to become trapped at one
+of the modes and never discover the other(s).
+
+Parallel-tempering attempts to address this problem.
+The key idea is that if the distribution of interest has density proportional
+to $f$, then for $\tau > 0$, the distribution with density proportional to 
+$f^{1/\tau}$, will be flatter, with less isolated modes.
+Thus a chain converging to the distribution governed by $f^{1/\tau}$ will
+move about the state space with relatively less difficulty.
+This can be utilized by running chains converging to these two distributions
+in parallel, and periodically proposing a swap of their states.
+That is, the state of each chain is periodically used as a proposal for the 
+other, in a Metropolis update step.
+As a result, the chains become coupled, but it can be shown that they still
+converge to the correct stationary distributions.
+In order to improve the chances of a swap being accepted, while still gleaning
+the benefits of a flat $f^{1/\tau}$, several values $\tau_1, \ldots, \tau_m$
+may be used, with $m$ chains running in parallel. Swaps can then be performed
+between adjacent chains, in hope that the effect of the flattest chain will
+trickle down to the target chain.
+
+Drawing on a physics-based interpretation, the values $\tau_1, \ldots, \tau_m$
+are termed temperatures, and their range is known as a temperature ladder.
+The corresponding densities, usually written as
+    \[
+    f^{1/\tau} = \eul^{U / \tau},
+    \]
+are called replicas, while the function $U$ is called the energy potential
+function. 
+The target distribution can be regarded as having temperature $\tau_0 = 1$,
+while the flatter replicas have higher temperatures.
+
+\chapter*{Implementation}
+A univariate version of the parallel tempering algorithm was implemented in
+Python.
+At each iteration, every chain is first updated according to a Metropolis
+algorithm update. 
+This is always followed by a swap proposal between two of the chains,
+which is counted as a successive iteration only when it involves the target
+distribution's chain.
+The implementation was designed to support any target distribution that can
+be defined as a univariate Python function, and any symmetric proposal
+distribution that satisfies the same.
+The acceptance rate for the target distribution's chain is tracked,
+although acceptance rates for the replica chains are not.
+For the sake of efficiency, only the history of the target distribution's
+chain is saved.
+
+A standalone Metropolis algorithm was also implemented, for comparison.
+Similar features are supported. Additional tools include several probability
+densities, and a demonstration script, 
+the results of which are described in the following section.
+The Python module \texttt{Pymc} was considered for post-sampling diagnostics
+and plots, but lack of documentation on how to use it with an externally
+generated chain led to the R package \texttt{coda} being used instead.
+
+\chapter*{Results}
+
+First, the correctness of the implementation was checked by running both the 
+Metropolis algorithm and the parallel tempering algorithm with a
+$\dist{Laplace(0, 1)}$ distribution as the target.
+This distribution is unimodal and symmetric, making it an extremely easy
+target.
+Each algorithm was run for $10^5$ iterations, with a burn-in period of
+$5000$ iterations ($5$\%).
+A $\dist{N}(x^{(t)}, 9)$ proposal distribution was used for Metropolis updates,
+where $x^{(t)}$ denotes the current state of the chain.
+The variance $9$ was selected because it produced favorable acceptance rates.
+Four different temperature ladders were considered for the parallel
+tempering algorithm.
+The first two of these are linear, in the sense that they follow the pattern
+    \[
+    1, 1 + \lambda, 1 + 2\lambda, 1 + 3\lambda, \ldots, 1 + (m - 1)\lambda
+    \]
+for some constant $\lambda$.
+The second two are geometric, meaning they follow the pattern
+    \[
+    1, \lambda, \lambda^2, \lambda^3, \ldots, \lambda^{m - 1}.
+    \]
+For all cases, $m = 5$ replicas were used.
+
+    \begin{table}[ht]
+    \begin{tabular}{lrrrrr}
+    \toprule
+    & & \multicolumn{4}{c}{Parallel Tempering} \\
+    \cmidrule(l){3-6}
+    & Metropolis & Linear $(1)$ & Linear $(2)$ 
+    & Geometric $(1.5)$ & Geometric $(2)$ \\
+    \midrule
+    \input{res/demo_laplace/diagnostics.tex}
+    \bottomrule
+    \end{tabular}
+    \caption{
+    Diagnostics for the $\dist{Laplace}(0, 1)$ example.
+    }
+    \label{tab:laplace_diag}
+    \end{table}
+
+Diagnostics for the resulting samples are shown in 
+table~\ref{tab:laplace_diag}.
+Although this was a relatively easy target distribution,
+the superiority of the parallel tempering algorithm over the standard
+Metropolis algorithm is already evident.
+The lag-1 autocorrelations for the parallel-tempering samples are smaller,
+and the effective sample sizes are larger.
+On top of this, the $p$-value of the Geweke diagnostic, which assumes
+stationarity as its null hypothesis, is substantially larger for the
+parallel-tempering samples.
+Overall, the parallel tempering chains seem to be mixing better and approaching
+stationary much faster than the Metropolis chain.
+However, among the different choices of temperature ladder for the
+parallel tempering, none stand out above the others.
+Density plots for the samples are presented in figure~\ref{fig:laplace_dens}.
+Despite the diagnostic differences between the chains, there is not much
+difference visible in the plots; all of the samples approximate the target
+distribution reasonably well.
+
+    \begin{figure}[h]
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width = \textwidth]{res/demo_laplace/density_00.png}
+        \caption{Metropolis}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width = \textwidth]{res/demo_laplace/density_02.png}
+        \caption{PT -- Linear $(2)$}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width = \textwidth]{res/demo_laplace/density_04.png}
+        \caption{PT -- Geometric $(2)$}
+    \end{subfigure}
+    \caption{
+    Density plots for the $\dist{Laplace}(0, 1)$ example.
+    Plots for the other parallel tempering samples were similar.
+    The true density is shown dotted.
+    }
+    \label{fig:laplace_dens}
+    \end{figure}
+
+A slightly more difficult target distribution was used for the next example,
+although it may still be within reach of a carefully-tuned and long-running
+Metropolis algorithm.
+The distribution used was a mixture of a $\dist{N}(-6, 0.25)$ distribution
+and a $\dist{N}(8, 1)$ distribution, with respective proportions $20$\% and
+$80$\%.
+Most other settings were kept the same as in the first example,
+including the choices of temperature ladder.
+
+    \begin{table}[ht]
+    \begin{tabular}{lrrrrr}
+    \toprule
+    & & \multicolumn{4}{c}{Parallel Tempering} \\
+    \cmidrule(l){3-6}
+    & Metropolis & Linear $(1)$ & Linear $(2)$ 
+    & Geometric $(1.5)$ & Geometric $(2)$ \\
+    \midrule
+    \input{res/demo_01/diagnostics.tex}
+    \bottomrule
+    \end{tabular}
+    \caption{
+    Diagnostics for the gentle normal mixture example.
+    }
+    \label{tab:01_diag}
+    \end{table}
+
+Table~\ref{tab:01_diag} shows the corresponding diagnostics.
+Once again, the Metropolis algorithm performs poorly next to the parallel
+tempering algorithm.
+However, a more interesting result is also apparent.
+The linear temperature ladder with $\lambda = 2$ does substantially better
+on the Geweke diagnostic than any of the others, although the effective
+sample size is actually lower than the others.
+On the other hand, the linear temperature ladder with $\lambda = 1$ has the
+highest effective sample size by a small margin.
+The density plots in figure~\ref{fig:01_density} indicate that in this example,
+the Metropolis algorithm also did a poor job of exploring the mode at $-6$,
+despite detecting it.
+All of the parallel tempering algorithms produced samples that follow the
+target distribution closely.
+The linear temperature ladder with $\lambda = 2$ did well with the mode
+at $-6$, while that with $\lambda = 1$ did very well with the mode at $8$.
+
+    \begin{figure}[h]
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width = \textwidth]{res/demo_01/density_00.png}
+        \caption{Metropolis}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width = \textwidth]{res/demo_01/density_01.png}
+        \caption{PT -- Linear $(1)$}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width = \textwidth]{res/demo_01/density_02.png}
+        \caption{PT -- Linear $(2)$}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width = \textwidth]{res/demo_01/density_03.png}
+        \caption{PT -- Geometric $(1.5)$}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width = \textwidth]{res/demo_01/density_04.png}
+        \caption{PT -- Geometric $(2)$}
+    \end{subfigure}
+    \caption{
+    Density plots for the gentle normal mixture example.
+    The true density is shown dotted.
+    }
+    \label{fig:01_density}
+    \end{figure}
+
+The third example was motivated by the results of the second.
+The target distribution is an equal mixture of normal distributions with means
+$-20$, $-10$, $0$, and $10$, all with common variance $0.25$.
+Only two of the four temperature ladders previously seen were used,
+but each with $m = 5$ (a short ladder) and $m = 10$ (a long ladder),
+in order to examine the effect of the ladder length.
+The linear $\lambda = 1$ ladder was chosen based on its performance in the
+previous example, while the geometric $\lambda = 1.5$ ladder was chosen for
+the sake of comparison.
+In this example, the variance of the proposal distribution had to be decreased
+to 1 in order to maintain good acceptance rates.
+    
+    \begin{table}[h]
+    \begin{tabular}{lrrrrr}
+    \toprule
+    & & \multicolumn{4}{c}{Parallel Tempering} \\
+    \cmidrule(l){3-6}
+    & Metropolis & Linear $(1S)$ & Linear $(1L)$ 
+    & Geometric $(1.5S)$ & Geometric $(1.5L)$ \\
+    \midrule
+    \input{res/demo_02/diagnostics.tex}
+    \bottomrule
+    \end{tabular}
+    \caption{
+    Diagnostics for the difficult normal mixture example.
+    }
+    \label{tab:02_diag}
+    \end{table}
+
+The diagnostics in table~\ref{tab:02_diag} suggest that parallel tempering with
+longer temperature ladders may actually be worse than with shorter ones, since
+they lead to higher autocorrelations, lower effective sample sizes, and lower 
+Geweke $p$-values.
+However, the density plots in figure~\ref{fig:02_density} tell a very different
+story. 
+Only the chain using the long geometric temperature ladder managed to find
+all of the modes.
+Every other chain became trapped in the region around $-10$.
+
+    \begin{figure}[h]
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width = \textwidth]{res/demo_02/density_00.png}
+        \caption{Metropolis}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width = \textwidth]{res/demo_02/density_01.png}
+        \caption{PT -- Linear $(1S)$}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width = \textwidth]{res/demo_02/density_04.png}
+        \caption{PT -- Geometric $(1.5L)$}
+    \end{subfigure}
+    \caption{
+    Density plots for the difficult normal mixture example.
+    Plots for the other parallel tempering samples were similar to that
+    for the linear $(1S)$ case.
+    The true density is shown dotted.
+    }
+    \label{fig:02_density}.
+    \end{figure}
+
+The (modest) success of the parallel tempering algorithm using a long geometric
+temperature ladder with $\lambda = 1.5$ in the third example could be due to
+the length of the ladder, but it could also be due to the magnitude of the
+temperatures on the ladder.
+In particular, $1.5^{10}$ is much larger than the maximum temperature of most of
+the other ladders that have been applied.
+Another question that arises is how quickly the parallel tempering algorithm
+would arrive at the target distribution using that ladder.
+In order to examine these points, a final example was run.
+For this example, the number of iterations was increased to $250000$, and
+a more diverse assembly of temperature ladders was used.
+The Metropolis algorithm was not even considered, due to its poor performance
+in the previous examples.
+
+    \begin{table}[h]
+    \begin{tabular}{lrrrrr}
+    \toprule
+    & \multicolumn{5}{c}{Parallel Tempering} \\
+    \cmidrule(l){2-6}
+    & Linear $(5S)$ & Geometric $(1.1L)$ & Geometric $(1.5L)$ 
+    & Geometric $(2S)$ & Geometric $(3S)$ \\
+    \midrule
+    \input{res/demo_03/diagnostics.tex}
+    \bottomrule
+    \end{tabular}
+    \caption{
+    Diagnostics for the second attempt at the difficult normal mixture example.
+    }
+    \label{tab:03_diag}
+    \end{table}
+
+Diagnostics for this example are presented in table~\ref{tab:03_diag}.
+It first appears that the long geometric ladder with $\lambda = 1.1$ did
+exceptionally well, while either the linear ladder or the short geometric
+ladder with $\lambda = 2$ comes in second.
+However, the density plots, in figure~\ref{fig:03_density}, show that the
+long geometric ladder with $\lambda = 1.1$ is the only case where the
+algorithm still became trapped in the region around $-10$.
+Furthermore, the results seem to indicate that a longer temperature ladder
+is not necessarily better for exploring the state space.
+Instead, having extreme temperatures on the ladder improves transit around
+the state space.
+
+    \begin{figure}[h]
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width = \textwidth]{res/demo_03/density_00.png}
+        \caption{PT -- Linear $(5S)$}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width = \textwidth]{res/demo_03/density_01.png}
+        \caption{PT -- Geometric $(1.1L)$}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width = \textwidth]{res/demo_03/density_02.png}
+        \caption{PT -- Geometric $(1.5L)$}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width = \textwidth]{res/demo_03/density_03.png}
+        \caption{PT -- Geometric $(2S)$}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width = \textwidth]{res/demo_03/density_04.png}
+        \caption{PT -- Geometric $(3S)$}
+    \end{subfigure}
+    \caption{
+    Density plots for the second attempt at the difficult normal mixture 
+    example.
+    The true density is shown dotted.
+    }
+    \label{fig:03_density}.
+    \end{figure}
+
+\FloatBlock
+\chapter*{Conclusions}
+There is no question that the parallel tempering algorithm outperforms the
+Metropolis (and by extension, Metropolis-Hastings) algorithm, not only with
+respect to exploration of the state space, but also with respect to the rate
+of convergence.
+Because its implementation requires only a few simple modifications of the
+regular Metropolis algorithm, there is little reason not to adopt parallel
+tempering as the default method of choice whenever a better, more specialized
+method does not present itself.
+A potential cost is in compute time, because running multiple Markov chains is
+considerably more expensive than running one.
+However, this is somewhat mitigated by the rate of convergence; a short run of
+parallel tempering may be equivalent to a much longer run of
+Metropolis-Hastings.
+Moreover, this method is amenable to parallelization, albeit with the caveat
+that threads must periodically synchronize in order to swap states.
+
+Despite the considerations of this paper, the best choice of temperature ladder
+remains murky, and may be highly situational. 
+However, including extreme temperatures and using a long ladder, so that states
+from those extremes successfully trickle down, seems pertinent based on some
+of the evidence presented.
+Furthermore, it is intuitive: high temperature replicas are very nearly flat,
+so the state space can be explored rapidly, and adjacent replicas have similar
+temperatures in a long chain, so state swaps are frequently accepted.
+This issue should, nonetheless, be examined in greater detail.
+
+The frequency with which state swaps should occur was not investigated,
+but this is an important point. 
+While decreasing the frequency seems like it would only cause a corresponding
+dampening of the benefits of parallel tempering for the target chain,
+the frequency could be increased by requiring more than one pair of chains
+to swap simultaneously.
+
+Another point which was neglected here is the role of the proposal distribution
+in the effectiveness of the parallel tempering algorithm.
+High-variance proposals or heavy-tailed proposals (e.g.\ Laplace) may
+provide even faster exploration of the state space if used to update the high
+temperature replicas, while lower variance proposals could still be used for
+the target and lower temperature replicas.
+This approach may or may not disrupt the theoretical properties of the chain,
+which is a topic that goes well beyond the details presented.
+
+\chapter*{Extensions}
+Many extensions are possible to the provided code.
+It would be fairly easy to add support for multivariate sampling,
+and to add user control of the swap frequency.
+Slightly more difficult would be tracking the acceptance rates or even the
+entire histories for all of the replicas, but these would be very useful to
+have for analysis and diagnosis of performance.
+
+A more novel, but still quite useful, thing would be to implement the algorithm
+in parallel on a multiprocessor, or even a GPU.
+The latter may require significant tuning of the algorithm to make it
+performant, possibly to the extent of redesigning parts of it.
+One approach is to use an extremely long temperature ladder
+(64 to 256 replicas), running each replica on its own thread.
+Issues that might arise include the cost of communication between threads,
+and the ability of the threads to keep the GPU running at full load.
+
+Finally, a more theoretical approach may be warranted here.
+It's possible that useful results about the workings of parallel tempering
+are within reach of a diligent theoretician. 
+
+\clearpage
+\chapter*{Source Code}
+\hrule
+\lstinputlisting{../mcmc_algorithms.py}
+\hrule
+\lstinputlisting{../mcmc_demos.py}
+\hrule
+\lstinputlisting{../postproc.R}
+\end{document}
+
